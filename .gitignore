@@ -1,0 +1,6 @@
+.idea/
+__pycache__/
+*.pyc
+crida_plans/
+venv/
+.env
