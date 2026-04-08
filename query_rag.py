@@ -11,7 +11,7 @@ Usage:
     python query_rag.py --state Bihar "flood contingency measures"
     python query_rag.py --interactive
 """
-
+import warnings; warnings.filterwarnings("ignore")
 import sys
 import argparse
 import requests
