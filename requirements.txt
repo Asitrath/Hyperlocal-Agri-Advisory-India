@@ -1,0 +1,20 @@
+# --- Core RAG Framework ---
+langchain==1.2.15
+langchain-community==0.4.1
+langchain-text-splitters==1.1.0
+langchain-core==1.2.27
+
+# --- Vector Database & Embeddings ---
+chromadb==1.5.6
+sentence-transformers==3.1.2
+torch>=2.2.0  # Required backend for sentence-transformers
+
+# --- Data Processing ---
+pypdf==4.1.0
+requests==2.33.0
+urllib3>=2.2.0
+
+# --- Development & Utilities ---
+numpy<2.0.0
+tqdm==4.66.0
+python-dotenv==1.0.1
