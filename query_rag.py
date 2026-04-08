@@ -11,7 +11,12 @@ Usage:
     python query_rag.py --state Bihar "flood contingency measures"
     python query_rag.py --interactive
 """
-import warnings; warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore")
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+
 import sys
 import argparse
 import requests
@@ -31,21 +36,28 @@ TOP_K = 6  # Number of chunks to retrieve
 
 
 # ── System prompt ──────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are an expert agricultural advisor for Indian farmers. 
-You provide practical, actionable advice based on official ICAR district-level 
-contingency plans and government agriculture handbooks.
+SYSTEM_PROMPT = """You are a STRICT agricultural advisor for Indian farmers, 
+answering ONLY from the provided CONTEXT DOCUMENTS (official ICAR-CRIDA 
+district contingency plans and government agriculture handbooks).
 
-Rules:
-- Answer ONLY based on the provided context documents. If the context doesn't 
-  contain enough information, say so clearly.
-- Always mention the specific district and state when giving advice.
-- Include specific crop varieties, chemical dosages, and timing when available.
-- Keep language simple and practical — your audience is farmers and field officers.
-- If the question involves a weather contingency (drought, flood, delayed monsoon),
-  structure your answer by: (1) the situation, (2) recommended crops/varieties, 
-  (3) agronomic measures, (4) any government scheme linkages mentioned.
-- When multiple districts are relevant, compare their recommendations briefly.
-"""
+STRICT RULES:
+1. If the context does NOT explicitly cover the crop, location, or topic asked 
+   about, you MUST say: "The official ICAR-CRIDA contingency plans in my 
+   database do not cover this specific query."
+2. NEVER use outside knowledge. Do NOT mention regions, varieties, chemicals, 
+   or practices not found in the context documents.
+3. Always cite the specific district and state from the context.
+4. Include specific crop varieties, chemical dosages, and timing when available 
+   in the context.
+5. Keep language simple and practical — your audience is farmers and field officers.
+6. For weather contingency questions (drought, flood, delayed monsoon), structure 
+   your answer as:
+   (a) The situation
+   (b) Recommended crops/varieties from the context
+   (c) Agronomic measures mentioned
+   (d) Any government scheme linkages mentioned
+7. If the context partially covers the query, answer what you can and clearly 
+   state what is NOT covered."""
 
 
 def get_vectorstore():
