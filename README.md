@@ -23,7 +23,7 @@ Indian agriculture is highly diverse, spanning 127 agro-climatic zones. Most adv
 ├── chroma_db/            # Persistent vector database
 ├── logs/                 # Download and execution logs
 ├── docs/                 # Detailed Wiki and evaluation files
-├── download_crida.py     # Data acquisition script
+├── Download_crida_plans.py     # Data acquisition script
 ├── ingest_pdfs.py        # Vectorization & metadata enrichment pipeline
 ├── query_rag.py          # LLM-powered advisory interface
 └── requirements.txt      # Project dependencies
