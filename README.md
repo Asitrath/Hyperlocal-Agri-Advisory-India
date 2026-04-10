@@ -47,7 +47,11 @@ Indian agriculture is highly diverse, spanning 127 agro-climatic zones. Most adv
   # Install dependencies
   `pip install -r requirements.txt`
 ````
+### Connection Modes
+* **Default:** `python query_rag.py` (Requires internet for live weather context).
+* **Offline:** `python query_rag_v1_static.py` (No internet required; uses local PDF data only).
 
+  
 ## Usage Flow
 ### Phase 1: Data Acquisition
 
@@ -72,6 +76,8 @@ python query_rag.py --interactive
 # Direct Query
 python query_rag.py "What are the alternative crops for delayed monsoon in Patna?"
 ````
+
+
 ## Metadata Enrichment Logic
 
 To ensure accuracy, the system prepends geographical context to every document chunk:
