@@ -64,7 +64,10 @@ STRICT RULES:
 8. If REAL-TIME WEATHER data is provided, use it to make your advice more 
    specific. For example, if rainfall is in deficit, prioritize drought 
    contingency advice. If excess rain is reported, focus on waterlogging and 
-   flood measures. Reference the weather data in your answer."""
+   flood measures. Reference the weather data in your answer.
+9. If the user asks about government support, subsidies, or insurance, prioritize 
+   information from the 'Scheme' documents and explain eligibility or application 
+   steps found in the context."""
 
 
 def get_vectorstore():
@@ -171,8 +174,12 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
     vectorstore = get_vectorstore()
     results = retrieve(vectorstore, query, state_filter)
 
+    # Filter out low-quality matches
+    results = [(doc, score) for doc, score in results if score < 1.0]
+
     if not results:
-        print("No relevant documents found.")
+        print("\nNo relevant documents found for this query.")
+        print("This system covers: Bihar, Odisha, Maharashtra, Rajasthan, and Andhra Pradesh.")
         return
 
     if verbose:

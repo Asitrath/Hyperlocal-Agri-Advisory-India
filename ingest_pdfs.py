@@ -45,6 +45,7 @@ STATE_ALIASES = {
     "odisha": "Odisha",
     "rajasthan": "Rajasthan",
     "_handbooks": "All India",
+    "_schemes": "All India",
 }
 
 # Known agro-climatic zones (partial, for enrichment)
@@ -78,6 +79,22 @@ def extract_metadata(filepath):
         metadata["doc_type"] = "handbook"
         metadata["state"] = "All India"
         metadata["district"] = "All India"
+        return metadata
+
+    if "_schemes" in filepath:
+        metadata["doc_type"] = "scheme"
+        metadata["state"] = "All India"
+        metadata["district"] = "All India"
+        # Tag the specific scheme for better retrieval
+        fname_lower = os.path.basename(filepath).lower()
+        if "pmfby" in fname_lower:
+            metadata["scheme"] = "PMFBY"
+        elif "pm_kisan" in fname_lower or "pmkisan" in fname_lower:
+            metadata["scheme"] = "PM-KISAN"
+        elif "rkvy" in fname_lower:
+            metadata["scheme"] = "RKVY"
+        else:
+            metadata["scheme"] = "General"
         return metadata
 
     # Extract district from filename

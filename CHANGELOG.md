@@ -46,3 +46,26 @@
 - Updated `SYSTEM_PROMPT` to prioritize weather data when available.
 - Improved error handling for Ollama connection timeouts.
 - Suppressed TensorFlow/Tokenizer parallelism warnings for a cleaner CLI output.
+
+## [0.5.0] - 2026-04-10
+### Added
+- `telegram_bot.py`: Launched an asynchronous Telegram interface for mobile accessibility.
+- Implemented core bot commands: `/start`, `/help`, `/weather`, `/state`, and `/reset`.
+- Integrated "Typing" indicators to improve user experience during RAG processing.
+- Added `SCORE_THRESHOLD` logic to ensure only high-relevance document chunks are used for generation.
+- Created "Page 9: Telegram Bot Interface" in the Wiki to document mobile architecture.
+
+### Changed
+- **Mobile-Optimized Prompting:** Updated the system prompt to enforce a 300-word limit for readable mobile advisories.
+- **Non-Streaming Inference:** Optimized Ollama calls for Telegram's message delivery model to prevent fragmented responses.
+- **Persistence:** Enabled `user_data` session tracking to remember a user's selected State filter across multiple queries.
+
+### Fixed
+- Improved district detection logic to handle natural language mentions within Telegram messages.
+- Resolved Markdown parsing issues for Telegram when rendering weather code blocks.
+
+## [0.5.1] - 2026-04-10
+### Added
+- Created `_schemes` directory to house major national agricultural policy documents.
+- Ingested PMFBY (Insurance), PM-KISAN (Direct Income), and RKVY (Infrastructure) PDFs.
+- Updated `ingest_pdfs.py` with scheme-specific metadata tagging for higher retrieval precision.

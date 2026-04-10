@@ -1,6 +1,14 @@
+# Local Database
+chroma_db/
+
 .idea/
+
+# Python Cache
 __pycache__/
 *.pyc
+
 crida_plans/
+
+# Virtual Environment
 venv/
 .env
