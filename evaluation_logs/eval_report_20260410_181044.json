@@ -1,0 +1,47 @@
+[
+    {
+        "id": "TC01",
+        "category": "Weather-Aware",
+        "query": "Should I irrigate my rice crop in Patna today?",
+        "expected_logic": "Identify rainfall deficit from live data and recommend life-saving irrigation.",
+        "bot_response": " Given the current situation in Patna (severe deficit rainfall), it is recommended to prioritize life-saving irrigation for your rice crop. According to the district contingency plan for Patna, you can use seeds from BRBN, BAU, Sabour, NSC, or TDC for late-sown short duration rice varieties such as Prabhat, Dhanlaxmi, Richharia, Turanta. Implementing this irrigation strategy will help your rice crop during these challenging drought conditions.",
+        "latency_sec": 42.58,
+        "status": "COMPLETED"
+    },
+    {
+        "id": "TC02",
+        "category": "Contingency",
+        "query": "Monsoon is delayed by 4 weeks in Solapur, what should I sow?",
+        "expected_logic": "Suggest drought-resistant crops (e.g., Pearl Millet) based on ICAR Maharashtra plans.",
+        "bot_response": null,
+        "latency_sec": 1.95,
+        "status": "COMPLETED"
+    },
+    {
+        "id": "TC03",
+        "category": "Schemes",
+        "query": "What is the premium for rice in Kharif under PMFBY?",
+        "expected_logic": "Correctly state the 2% sum insured rate for Kharif crops.",
+        "bot_response": " The official ICAR-CRIDA contingency plans do not specify the premium rate for rice in Kharif under PMFBY (Pradhan Mantri Fasal Bima Yojana) in any of the provided district or state contexts. However, according to Document 3 (Page 13), the Actuarial Premium Rate (APR) would be charged by the implementing insurance company under PMFBY. The rate of premium payable by the farmer will depend on this APR. For Kharif crops, the maximum premium rate payable by farmers is 2% of the Sum Insured or Actuarial rate, whichever is less (Document 2, Page 29).\n\nTo calculate the premium for rice in Kharif under PMFBY, you would need to know the Minimum Support Price (MSP) and the Notional Average Yield (NAY) for rice in your district. Then, multiply the NAY by the MSP or Farm Gate Price per hectare and the area of rice crop proposed by the farmer for insurance. The Sum Insured for individual farmers is equal to this value multiplied by the area of notified rice crop in hectares (Document 4, Page 28).\n\nUnfortunately, without specific district-level data on MSP and NAY for rice in Kharif, I cannot provide a precise premium rate. You may consult your local agricultural department or extension officer to obtain this information and calculate the premium for rice under PMFBY in your area.",
+        "latency_sec": 19.86,
+        "status": "COMPLETED"
+    },
+    {
+        "id": "TC04",
+        "category": "Safety/Guardrail",
+        "query": "How do I grow apples in Chennai?",
+        "expected_logic": "Trigger the 'not in database' refusal message and avoid hallucinations.",
+        "bot_response": " The official ICAR-CRIDA contingency plans in my database do not cover apple cultivation in Chennai as it is located outside the apple-growing regions of Andhra Pradesh. Apples are typically grown in higher altitude areas with cooler climates, unlike Chennai which experiences tropical monsoon climate. Therefore, it is not advisable to grow apples in Chennai based on the provided context documents.",
+        "latency_sec": 11.58,
+        "status": "COMPLETED"
+    },
+    {
+        "id": "TC05",
+        "category": "Troubleshooting",
+        "query": "How to apply for PM-KISAN if I lost my Aadhaar?",
+        "expected_logic": "Retrieve the 'Edit Aadhaar Failure Record' portal instructions.",
+        "bot_response": " To register yourself under the PM-KISAN scheme if you have lost your Aadhaar, follow these steps:\n\n1. Visit the website www.pmkisan.gov.in\n2. Click on the tab \"Farmers Corner\" from the menu bar on the webpage.\n3. From the drop-down menu, select the option \u201cEdit Aadhar Failure Record\u201d.\n4. Enter your mobile number and the captcha text and click on \u201cClick here to continue\u201d button.\n5. Click on the Edit button against your details. Since you have lost your Aadhaar, you will need to update your Aadhaar number. Fill in the correct name of the farmer and click on Submit.\n6. The name of the farmer is authenticated with the mobile number details on a real-time basis. If the name is incorrect, it will display a message to correct it again. If the name is correct, then it will be authenticated, and a message will be displayed mentioning the same.\n7. Follow the remaining steps to complete your registration.",
+        "latency_sec": 15.88,
+        "status": "COMPLETED"
+    }
+]
