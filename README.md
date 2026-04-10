@@ -15,6 +15,8 @@ Indian agriculture is highly diverse, spanning 127 agro-climatic zones. Most adv
 * **Embeddings:** `all-MiniLM-L6-v2` (Sentence-Transformers)
 * **LLM Backend:** [Ollama](https://ollama.com/) running **Mistral 7B**
 * **PDF Processing:** `PyPDF`
+* * **Weather API:** [Open-Meteo](https://open-meteo.com/) (Free, no API key)
+* **Bot Interface:** [python-telegram-bot](https://python-telegram-bot.org/) (Telegram)
 
 ## Project Structure
 ```text
@@ -26,8 +28,20 @@ Indian agriculture is highly diverse, spanning 127 agro-climatic zones. Most adv
 ├── Download_crida_plans.py     # Data acquisition script
 ├── ingest_pdfs.py        # Vectorization & metadata enrichment pipeline
 ├── query_rag.py          # LLM-powered advisory interface
+├── weather.py            # Open-Meteo real-time weather integration
+├── telegram_bot.py       # Telegram bot interface
+├── .env                  # Bot token (not committed)
 └── requirements.txt      # Project dependencies
 ````
+## Data Coverage
+125 district contingency plans across 5 agro-climatic zones:
+| State | Districts | Climate Type |
+|-------|-----------|-------------|
+| Bihar | 38 | Eastern wet, flood-prone |
+| Odisha | 30 | Coastal + tribal hinterland |
+| Maharashtra | 34 | Semi-arid Deccan + Konkan coast |
+| Rajasthan | 11 | Arid/semi-arid western India |
+| Andhra Pradesh | 12 | Southern coastal + dryland |
 
 ## Installation & Setup
 
@@ -76,6 +90,32 @@ python query_rag.py --interactive
 # Direct Query
 python query_rag.py "What are the alternative crops for delayed monsoon in Patna?"
 ````
+## Demo
+```
+$ python query_rag.py "What should I grow if monsoon is delayed by 4 weeks in Patna?"
+
+  Fetching weather for Patna, Bihar...
+
+  Answer [Bihar] [live weather]:
+
+  In case of a 4-week delay in monsoon in Patna (Bihar), you should 
+  consider: Rice varieties like Prabhat, Dhanlaxmi suitable for late 
+  sowing. Short-duration vegetables such as cauliflower, cabbage, 
+  brinjal. For pulses: Pigeonpea (Bahar, Narendra Arhar-1)...
+
+  Sources:
+   - Bihar — Patna district
+   - Bihar — Aurangabad district
+   - Open-Meteo weather API (real-time)
+```
+## Telegram Bot
+For farmer-facing access, a Telegram bot wraps the full RAG pipeline.
+
+1. Get a token from [@BotFather](https://t.me/BotFather)
+2. Create `.env` with: `TELEGRAM_BOT_TOKEN=your-token`
+3. Run: `python telegram_bot.py`
+
+Bot commands: `/start`, `/weather Patna`, `/state Bihar`, or just type a question.
 
 
 ## Metadata Enrichment Logic
