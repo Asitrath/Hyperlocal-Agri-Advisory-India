@@ -34,3 +34,15 @@
 
 ### Changed
 - Shifted from raw chunk display to natural language advisory generation.
+
+## [0.4.0] - 2026-04-09
+### Added
+- Integrated `weather.py` into the main `query_rag.py` pipeline.
+- Added `/weather` and `/noweather` commands to the Interactive Mode.
+- Implemented automatic district/state detection from natural language queries.
+- Added WMO weather code interpretation for human-readable weather descriptions.
+
+### Changed
+- Updated `SYSTEM_PROMPT` to prioritize weather data when available.
+- Improved error handling for Ollama connection timeouts.
+- Suppressed TensorFlow/Tokenizer parallelism warnings for a cleaner CLI output.

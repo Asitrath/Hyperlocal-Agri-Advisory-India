@@ -1,21 +1,21 @@
 """
-Agriculture RAG - Weather-Aware Query Pipeline
-================================================
-Retrieves relevant chunks from ChromaDB, fetches real-time weather
-for the detected district, and uses Ollama to generate grounded answers.
+Agriculture RAG - Query Pipeline with Ollama
+==============================================
+Retrieves relevant chunks from ChromaDB and uses Ollama (Mistral)
+to generate natural language answers grounded in the documents.
 
 Usage:
     python query_rag.py "What should I grow if monsoon is delayed in Patna?"
+    python query_rag.py "Rice pest control in Odisha"
+    python query_rag.py "Drought management for Solapur Maharashtra"
     python query_rag.py --state Bihar "flood contingency measures"
-    python query_rag.py --no-weather "general irrigation advice"
     python query_rag.py --interactive
 """
-
 import warnings
 warnings.filterwarnings("ignore")
-
 import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 
 import sys
 import argparse
@@ -25,9 +25,6 @@ import json
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
-# Weather integration
-from weather import get_weather_context, detect_district
-
 
 # ── Configuration ──────────────────────────────────────────────────────────
 CHROMA_DIR = "./chroma_db"
@@ -35,7 +32,7 @@ COLLECTION_NAME = "agri_advisory"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
-TOP_K = 6
+TOP_K = 6  # Number of chunks to retrieve
 
 
 # ── System prompt ──────────────────────────────────────────────────────────
@@ -60,11 +57,7 @@ STRICT RULES:
    (c) Agronomic measures mentioned
    (d) Any government scheme linkages mentioned
 7. If the context partially covers the query, answer what you can and clearly 
-   state what is NOT covered.
-8. If REAL-TIME WEATHER data is provided, use it to make your advice more 
-   specific. For example, if rainfall is in deficit, prioritize drought 
-   contingency advice. If excess rain is reported, focus on waterlogging and 
-   flood measures. Reference the weather data in your answer."""
+   state what is NOT covered."""
 
 
 def get_vectorstore():
@@ -86,6 +79,7 @@ def retrieve(vectorstore, query, state_filter=None, k=TOP_K):
     search_kwargs = {"k": k}
     if state_filter:
         search_kwargs["filter"] = {"state": state_filter}
+
     results = vectorstore.similarity_search_with_score(query, **search_kwargs)
     return results
 
@@ -97,13 +91,17 @@ def format_context(results):
         state = doc.metadata.get("state", "Unknown")
         district = doc.metadata.get("district", "Unknown")
         page = doc.metadata.get("page", "?")
+
+        # Remove the location prefix we added during ingestion
         content = doc.page_content
         if content.startswith("["):
             content = content.split("] ", 1)[-1]
+
         context_parts.append(
             f"--- Document {i} (State: {state}, District: {district}, Page: {page}) ---\n"
             f"{content}\n"
         )
+
     return "\n".join(context_parts)
 
 
@@ -114,8 +112,8 @@ def query_ollama(prompt, stream=True):
         "prompt": prompt,
         "stream": stream,
         "options": {
-            "temperature": 0.3,
-            "num_predict": 1024,
+            "temperature": 0.3,      # Low temperature for factual answers
+            "num_predict": 1024,      # Max tokens in response
             "top_p": 0.9,
         }
     }
@@ -128,9 +126,8 @@ def query_ollama(prompt, stream=True):
         print("  ollama serve")
         print(f"  ollama pull {OLLAMA_MODEL}")
         sys.exit(1)
-    except requests.exceptions.ReadTimeout:
-        print("\n✗ Ollama timed out. The model may still be loading.")
-        print("  Try: ollama run mistral \"hello\"  (in a separate terminal)")
+    except requests.HTTPError as e:
+        print(f"\n✗ Ollama error: {e}")
         sys.exit(1)
 
     if stream:
@@ -143,31 +140,17 @@ def query_ollama(prompt, stream=True):
                 full_response.append(token)
                 if data.get("done", False):
                     break
-        print()
+        print()  # newline after streaming
         return "".join(full_response)
     else:
         data = response.json()
         return data.get("response", "")
 
 
-def ask(query, state_filter=None, verbose=False, use_weather=True):
-    """Full RAG pipeline: detect location -> fetch weather -> retrieve -> generate."""
+def ask(query, state_filter=None, verbose=False):
+    """Full RAG pipeline: retrieve + generate."""
 
-    # 1. Detect district from query
-    detected_district, detected_state = detect_district(query)
-    if detected_state and not state_filter:
-        state_filter = detected_state
-
-    # 2. Fetch weather if district detected
-    weather_context = ""
-    if use_weather and detected_district:
-        print(f"  Fetching weather for {detected_district.title()}, {detected_state}...")
-        weather_context = get_weather_context(detected_district, detected_state)
-        if weather_context and verbose:
-            print(weather_context)
-            print()
-
-    # 3. Retrieve from vector store
+    # 1. Retrieve
     vectorstore = get_vectorstore()
     results = retrieve(vectorstore, query, state_filter)
 
@@ -176,35 +159,32 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
         return
 
     if verbose:
-        print(f"  Retrieved {len(results)} chunks:")
+        print(f"\n📚 Retrieved {len(results)} chunks:")
         for i, (doc, score) in enumerate(results, 1):
             state = doc.metadata.get("state", "?")
             district = doc.metadata.get("district", "?")
             print(f"   {i}. {state} > {district} (score: {score:.3f})")
         print()
 
-    # 4. Build prompt with weather + document context
-    doc_context = format_context(results)
+    # 2. Build prompt
+    context = format_context(results)
 
-    prompt_parts = [SYSTEM_PROMPT, "\n"]
+    prompt = f"""{SYSTEM_PROMPT}
 
-    if weather_context:
-        prompt_parts.append(f"REAL-TIME WEATHER DATA:\n{weather_context}\n\n")
+CONTEXT DOCUMENTS:
+{context}
 
-    prompt_parts.append(f"CONTEXT DOCUMENTS:\n{doc_context}\n")
-    prompt_parts.append(f"FARMER'S QUESTION: {query}\n\n")
-    prompt_parts.append("Based on the context documents and weather data above, provide a helpful and specific answer:")
+FARMER'S QUESTION: {query}
 
-    prompt = "".join(prompt_parts)
+Based on the context documents above, provide a helpful and specific answer:"""
 
-    # 5. Generate
-    weather_tag = " [live weather]" if weather_context else ""
-    state_info = f" [{state_filter}]" if state_filter else ""
-    print(f"\n  Answer{state_info}{weather_tag}:\n")
+    # 3. Generate
+    state_info = f" (filtered: {state_filter})" if state_filter else ""
+    print(f"\n🌾 Answer{state_info}:\n")
     response = query_ollama(prompt)
 
-    # 6. Show sources
-    print(f"\n  Sources:")
+    # 4. Show sources
+    print(f"\n📍 Sources:")
     seen = set()
     for doc, score in results:
         state = doc.metadata.get("state", "?")
@@ -212,32 +192,22 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
         key = f"{state}>{district}"
         if key not in seen:
             seen.add(key)
-            print(f"   - {state} -- {district} district")
-    if weather_context:
-        print(f"   - Open-Meteo weather API (real-time)")
+            print(f"   • {state} — {district} district")
 
     return response
 
 
-def interactive_mode(state_filter=None, use_weather=True):
+def interactive_mode(state_filter=None):
     """Interactive Q&A loop."""
-    w_status = "ON" if use_weather else "OFF"
-    print(f"""
-{'='*55}
-  Agriculture Advisory RAG System
-  Weather integration: {w_status}
-  
-  Type your question, or:
-    @Bihar ...     -> filter by state
-    /weather Patna -> check weather only
-    /help          -> show commands
-    quit           -> exit
-{'='*55}
-""")
+    print("\n" + "="*55)
+    print("  🌾 Agriculture Advisory RAG System")
+    print("  Type your question, or 'quit' to exit")
+    print("  Prefix with @State to filter, e.g. @Bihar")
+    print("="*55 + "\n")
 
     while True:
         try:
-            query = input("You: ").strip()
+            query = input("🧑‍🌾 You: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nGoodbye!")
             break
@@ -246,77 +216,39 @@ def interactive_mode(state_filter=None, use_weather=True):
             print("Goodbye!")
             break
 
-        # Commands
-        if query.lower() == "/help":
-            print("""
-  Commands:
-    @State query    -> Filter by state (e.g. @Bihar delayed monsoon)
-    /weather <dist> -> Show weather for a district
-    /noweather      -> Toggle weather off
-    /weather on     -> Toggle weather on
-    quit            -> Exit
-""")
-            continue
-
-        if query.lower().startswith("/weather on"):
-            use_weather = True
-            print("  Weather integration ON")
-            continue
-
-        if query.lower() == "/noweather":
-            use_weather = False
-            print("  Weather integration OFF")
-            continue
-
-        if query.lower().startswith("/weather "):
-            district_name = query[9:].strip()
-            detected, state = detect_district(district_name)
-            if detected:
-                ctx = get_weather_context(detected, state)
-                print(ctx if ctx else f"  Could not fetch weather for {district_name}")
-            else:
-                ctx = get_weather_context(district_name)
-                print(ctx if ctx else f"  District '{district_name}' not in database")
-            print()
-            continue
-
         # Check for @State prefix
         current_filter = state_filter
         if query.startswith("@"):
             parts = query.split(" ", 1)
             if len(parts) == 2:
-                current_filter = parts[0][1:]
+                current_filter = parts[0][1:]  # Remove @
                 query = parts[1]
 
-        ask(query, state_filter=current_filter, verbose=True, use_weather=use_weather)
+        ask(query, state_filter=current_filter, verbose=True)
         print()
 
 
 def main():
     global OLLAMA_MODEL
-
-    ap = argparse.ArgumentParser(description="Agriculture RAG - Weather-Aware Query System")
+    ap = argparse.ArgumentParser(description="Agriculture RAG Query System")
     ap.add_argument("query", nargs="?", help="Your agriculture question")
     ap.add_argument("--state", type=str, help="Filter by state (e.g. Bihar, Odisha)")
     ap.add_argument("--interactive", "-i", action="store_true", help="Interactive mode")
     ap.add_argument("--verbose", "-v", action="store_true", help="Show retrieval details")
     ap.add_argument("--model", default=OLLAMA_MODEL, help="Ollama model name")
-    ap.add_argument("--no-weather", action="store_true", help="Disable weather integration")
     args = ap.parse_args()
 
     OLLAMA_MODEL = args.model
-    use_weather = not args.no_weather
 
     if args.interactive:
-        interactive_mode(args.state, use_weather)
+        interactive_mode(args.state)
     elif args.query:
-        ask(args.query, state_filter=args.state, verbose=args.verbose, use_weather=use_weather)
+        ask(args.query, state_filter=args.state, verbose=args.verbose)
     else:
         print("Usage:")
         print('  python query_rag.py "your question here"')
         print('  python query_rag.py --state Bihar "delayed monsoon advice"')
         print('  python query_rag.py --interactive')
-        print('  python query_rag.py --no-weather "general query"')
 
 
 if __name__ == "__main__":
