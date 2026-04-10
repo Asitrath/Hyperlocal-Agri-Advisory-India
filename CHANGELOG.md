@@ -69,3 +69,11 @@
 - Created `_schemes` directory to house major national agricultural policy documents.
 - Ingested PMFBY (Insurance), PM-KISAN (Direct Income), and RKVY (Infrastructure) PDFs.
 - Updated `ingest_pdfs.py` with scheme-specific metadata tagging for higher retrieval precision.
+
+## [0.6.0] - 2026-04-10
+### Added
+- `run_evaluations.py`: Introduced an automated regression testing suite to verify RAG accuracy.
+- **Golden Dataset:** Implemented 5 initial test cases covering Weather-Awareness, Contingency, Schemes, and Safety Guardrails.
+- **Automated Logging:** Results are now exported to timestamped JSON reports in `/evaluation_logs` for auditability.
+- **Performance Monitoring:** Added latency tracking per query to monitor system speed as the database scales.
+

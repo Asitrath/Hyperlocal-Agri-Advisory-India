@@ -183,3 +183,19 @@ This phase evaluates the system's ability to retrieve procedural and financial i
 * **Query:** "How to apply for PM-KISAN if I lost my Aadhaar?"
 * **Response:** Successfully retrieved the "Edit Aadhaar Failure Record" workflow. This proves the RAG system can handle troubleshooting queries, not just general info.
 * **Status:** ✅ SUCCESS.
+
+## 🤖 Automated Evaluation Report (April 10, 2026)
+
+### Summary Statistics
+* **Total Tests:** 5
+* **Pass Rate:** 60% (3/5)
+* **Average Latency:** 18.57s
+* **Max Latency:** 42.58s (Weather-Aware)
+
+### Identified Regressions
+* **TC02 (Contingency):** Returned Null. Investigation required into ChromaDB score thresholding for Solapur district.
+* **TC04 (Guardrail):** Minor hallucination regarding state boundaries (Chennai/Andhra). Prompt engineering needed to tighten geographic strictly.
+
+### Successes
+* **Scheme Integration:** High accuracy on PMFBY premiums and PM-KISAN troubleshooting.
+* **Weather Synthesis:** Successfully mapped real-time Patna drought signals to specific ICAR seed recommendations.
