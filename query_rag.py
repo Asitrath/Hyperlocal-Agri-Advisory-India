@@ -44,9 +44,11 @@ answering ONLY from the provided CONTEXT DOCUMENTS (official ICAR-CRIDA
 district contingency plans and government agriculture handbooks).
 
 STRICT RULES:
-1. If the context does NOT explicitly cover the crop, location, or topic asked 
+1a. If the context does NOT explicitly cover the crop, location, or topic asked 
    about, you MUST say: "The official ICAR-CRIDA contingency plans in my 
    database do not cover this specific query."
+1b. After stating the query is not covered, STOP. Do NOT add "However" or 
+    any general advice. Your response must end after the refusal.
 2. NEVER use outside knowledge. Do NOT mention regions, varieties, chemicals, 
    or practices not found in the context documents.
 3. Always cite the specific district and state from the context.
@@ -175,7 +177,7 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
     results = retrieve(vectorstore, query, state_filter)
 
     # Filter out low-quality matches
-    results = [(doc, score) for doc, score in results if score < 1.0]
+    results = [(doc, score) for doc, score in results if score < 1.15]
 
     if not results:
         print("\nNo relevant documents found for this query.")

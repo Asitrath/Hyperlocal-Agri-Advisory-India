@@ -1,0 +1,122 @@
+[
+    {
+        "id": "TC01",
+        "category": "Weather-Aware",
+        "query": "Should I irrigate my rice crop in Patna today?",
+        "expected_goal": "Identify rainfall deficit from live data and recommend life-saving irrigation.",
+        "bot_response": " In Patna, Bihar, the current situation is severe deficit rainfall with high evapotranspiration. The official ICAR-CRIDA contingency plans suggest life saving irrigation for rice crops in such conditions.\n\nFor rice, consider varieties like Prabhat, Dhanlaxmi, Richharia, Turanta from the context documents. If you have seeds from BRBN, BAU, Sabour, NSC, or TDC, use them for irrigation. However, please note that this advice is based on the provided context documents and may not cover all specific crop varieties grown in your area.\n\nIn addition to irrigation, consider adopting SRI (System of Rice Intensification) methods for short duration rice (105-110 d) like Pusa 2-21, Pusa 33, IET 834, Saket 4, Narendra Dhan 80, or Naveen. This could help save water during critical stages such as tillering.\n\nRemember, these are general suggestions and may not cover all specificities of your farm or location. For more tailored advice, consult with local agricultural extension services or visit the ICAR-CRIDA office in Patna.",
+        "latency_sec": 29.51,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 5,
+        "grading_reason": "The response directly addresses the query, meets the goal, and cites specific districts/data."
+    },
+    {
+        "id": "TC02",
+        "category": "Weather-Aware",
+        "query": "What is the current weather situation for farming in Kalahandi?",
+        "expected_goal": "Show real-time weather data and relate it to contingency measures for Kalahandi, Odisha.",
+        "bot_response": " The current weather situation for farming in Kalahandi indicates that it is experiencing medium rainfall with lateritic soil and uplands. However, there is a delay of 2 weeks (as of June 4th week) due to early season drought. To cope with this, farmers are advised to grow short-duration, drought-tolerant varieties as sole crops such as Kalinga-II, Khandagiri, Vandana, Pathara, Parijata, Ghanteswari, Anjali for rice. For green gram and black gram, suggested varieties include PDM11 & 54, Hum1, T9, WBU108, Sarala, pant U19, 30, 35 respectively. Groundnut varieties like Kanak, Prachi, Kalika, Usha, Smruti, TG3, Phule Pragati, ICGS11, ICGS44 are also suitable. Farmers should also practice summer ploughing, land shaping, bunding, ridges and furrow methods of sowing with proper spacing, soil moisture conservation, life-saving irrigation, contour cultivation in sloppy areas, closer row and plant spacing, applying full P, K, and 20% N of recommended dose along with well-decomposed organic matter for early seedling vigor, intercultivation and thinning to maintain plant population per unit area of the crop, and weed control.",
+        "latency_sec": 21.43,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 4,
+        "grading_reason": "The response provides relevant information about suitable crop varieties and farming practices for Kalahandi but does not specify the current weather data or relate it to contingency measures."
+    },
+    {
+        "id": "TC03",
+        "category": "Contingency",
+        "query": "Monsoon is delayed by 4 weeks in Solapur, what should I sow?",
+        "expected_goal": "Suggest drought-resistant crops based on ICAR Maharashtra contingency plans.",
+        "bot_response": " In Solapur, Maharashtra, with a 4-week delay in monsoon and severe deficit rainfall, it is recommended to prioritize drought contingency measures. From Document 5 (Bhandara), for early season drought conditions, consider changing your crop/cropping system including variety. For instance, you could sow soybean as suggested practices by Dr. PDKV.\n\nHowever, the official ICAR-CRIDA district contingency plans in my database do not cover this specific query for Solapur, Maharashtra. It is advisable to consult local agricultural extension offices or visit their websites for more detailed information tailored to your location.",
+        "latency_sec": 14.5,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 4,
+        "grading_reason": "The response directly addresses the query and suggests a drought-resistant crop, but it could have been more helpful by providing specific varieties of soybean recommended for Solapur district."
+    },
+    {
+        "id": "TC04",
+        "category": "Contingency",
+        "query": "What are the flood contingency measures for rice in Puri district?",
+        "expected_goal": "Retrieve flood management advice from Odisha contingency plans.",
+        "bot_response": " In Puri district during the Zaid (summer) season, if there is flooding, follow these suggested contingency measures for rice:\n\n1. Provide drainage for the nursery bed or go for resowing if not possible.\n2. If necessary, perform wet seeding of sprouted seeds (75 kg/ha) of medium duration varieties like Lalat (120 days), Parijat (100 days), Konark (125 days), and Surendra (135 days).\n50% Nitrogen (NV) and 50% Potassium (K2O) may be applied as basal and at the tillering stage.\n\nIn partially damaged fields, gap filling may be done by redistributing the tillers.\n\nIf flood comes during the reproductive stage, emphasis should be given on forthcoming rabi crops.\n\nSupply of seeds and other agro-inputs for rabi crops at subsidized rates, provision of bank loan etc., can be utilized.\n\nWet seeding of short duration varieties (Heera - 60 days, Kalinga–IIIV - 90 days) or medium duration varieties during the forthcoming rabi season is also recommended.\n\nUtilization of residual soil moisture and use of recharged soil profile for growing pulses can be considered.\n\nGrowing vegetables after receding flood water and adopting integrated farming system can help obtain more income and compensate for the loss during kharif.",
+        "latency_sec": 20.46,
+        "keyword_passed": false,
+        "keyword_check": "Missing: Odisha",
+        "score": 5,
+        "grading_reason": "The AI response directly addresses the query and provides specific flood contingency measures for rice in Puri district, meeting the expected goal."
+    },
+    {
+        "id": "TC05",
+        "category": "Contingency",
+        "query": "Rice stem borer control chemicals in Sundargarh Odisha",
+        "expected_goal": "Cite specific chemicals like triazophos, chlorpyriphos, or methyl demeton from Odisha plans.",
+        "bot_response": " In Sundargarh, Odisha during the current Zaid (summer) season, to control rice stem borers, you can use methyl demeton or dimethioate as per the recommendations in Document 1 for Orissa 9 Sundargarh. The suggested dosage is not explicitly mentioned in the document, but it's advisable to consult local agricultural extension services for precise application rates. Keep in mind that the last 7 days have seen only 2.0mm of rainfall and the next 7 days are forecasted with no rain. Therefore, irrigation might be necessary to support crop growth.",
+        "latency_sec": 13.09,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 4,
+        "grading_reason": "Directly addresses the query and cites specific chemicals, but does not provide explicit dosage information."
+    },
+    {
+        "id": "TC06",
+        "category": "Schemes",
+        "query": "What is the premium for rice in Kharif under PMFBY?",
+        "expected_goal": "Correctly state the 2% of sum insured rate for Kharif food crops.",
+        "bot_response": " The official ICAR-CRIDA contingency plans in my database do not cover the specific query about the premium for rice in Kharif under PMFBY. However, according to Document 1 (All India, Page 28), the Actuarial Premium Rate (APR) would be charged under PMFBY and RWBCIS by implementing Insurance Companies. The APR for Kharif all food grain and Oilseeds crops is 2.0% of Sum Insured or Actuarial rate, whichever is less as per Document 2 (All India, Page 29). Since the MSP for Paddy (Common) in Kharif season for the year 2018-19 is 1750 rupees per quintal (Document 1, Page 88), you can calculate the Sum Insured based on your farm's area of notified crop proposed for insurance.",
+        "latency_sec": 16.36,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 4,
+        "grading_reason": "Answers the query but does not provide specific premium rate for rice in Kharif under PMFBY"
+    },
+    {
+        "id": "TC07",
+        "category": "Schemes",
+        "query": "Am I eligible for PM-KISAN if I am a government employee?",
+        "expected_goal": "State that government employees are excluded from PM-KISAN benefits.",
+        "bot_response": " According to Document 2, all serving or retired officers and employees of central/state Government, PSUs, autonomous organizations, and local bodies are not eligible to get benefits under the PM-KISAN scheme. Therefore, if you are a government employee, you are not eligible for this scheme.",
+        "latency_sec": 9.64,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 5,
+        "grading_reason": "The AI response directly addresses the query and meets the goal by citing specific exclusions for government employees in PM-KISAN scheme."
+    },
+    {
+        "id": "TC08",
+        "category": "Guardrail",
+        "query": "How do I grow apples in Chennai?",
+        "expected_goal": "Refuse with 'not in database' message. Must NOT suggest Shimla, Ooty, or any outside knowledge.",
+        "bot_response": " The official ICAR-CRIDA contingency plans in my database do not cover growing apples in Chennai. Apples are not a native crop to India's tropical climate, especially in Chennai. It is highly unlikely that they can be successfully grown there without significant modifications to the environment and specialized care.",
+        "latency_sec": 10.65,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 5,
+        "grading_reason": "Directly addresses the query and meets the goal by providing an accurate and specific response"
+    },
+    {
+        "id": "TC09",
+        "category": "Guardrail",
+        "query": "Best fertilizer for coffee in Kerala?",
+        "expected_goal": "Refuse — Kerala is not in the current database.",
+        "bot_response": " The official ICAR-CRIDA contingency plans do not cover the best fertilizer for coffee in Kerala. However, for general efficient fertilizer use, it is recommended to select the right kind of fertilizer according to the crop (coffee) and soil. Balanced fertilization should be practiced, and crops should only be sown at locally recommended periods. Farmers can get crop-specific nutrient recommendations after consulting their local extension service or DESAI-trainer and discussing with them the soil analysis report. Unfortunately, the context documents do not provide specific details for coffee cultivation in Kerala.",
+        "latency_sec": 11.73,
+        "keyword_passed": false,
+        "keyword_check": "Missing: database",
+        "score": 3,
+        "grading_reason": "Answers the query but does not provide specific fertilizer recommendations for coffee in Kerala."
+    },
+    {
+        "id": "TC10",
+        "category": "Cross-District",
+        "query": "Compare drought strategies between Solapur and Anantapur",
+        "expected_goal": "Pull contingency data from both Maharashtra (Solapur) and Andhra Pradesh (Anantapur).",
+        "bot_response": " In Anantapur district of Andhra Pradesh, the current situation is severe deficit rainfall with high evapotranspiration. The official ICAR-CRIDA contingency plans suggest the following measures for mid-season drought (long dry spell) in Redgram and Groundnut crops:\n\n1. At vegetative stage: Protect the crop from Thrips using Chlorpyriphos at 2ml/L at 70 days interval, and mulching with groundnut shells is advised.\n2. At reproductive stage: Supplemental irrigation with harvested rainwater in ponds (100mm depth) by using micro-irrigation (Sprinklers). Digging farm ponds may be encouraged under NREC.\n\nIn Solapur district, the context documents do not cover specific drought strategies for the same crops and season. Therefore, I cannot compare the drought strategies between Solapur and Anantapur based on the provided information.",
+        "latency_sec": 17.67,
+        "keyword_passed": true,
+        "keyword_check": "All keywords OK",
+        "score": 4,
+        "grading_reason": "Answer directly addresses the query and provides relevant information for Anantapur district, but lacks specific data for Solapur district to make a direct comparison"
+    }
+]
