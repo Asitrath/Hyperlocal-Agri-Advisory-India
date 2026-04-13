@@ -27,7 +27,8 @@ from langchain_community.vectorstores import Chroma
 
 # Weather integration
 from weather import get_weather_context, detect_district
-
+# mandi price integration
+from mandi_prices import get_price_context, detect_commodity
 
 # ── Configuration ──────────────────────────────────────────────────────────
 CHROMA_DIR = "./chroma_db"
@@ -69,7 +70,15 @@ STRICT RULES:
    flood measures. Reference the weather data in your answer.
 9. If the user asks about government support, subsidies, or insurance, prioritize 
    information from the 'Scheme' documents and explain eligibility or application 
-   steps found in the context."""
+   steps found in the context.
+10. If MARKET PRICE DATA is provided, reference the actual prices in your answer.
+   Compare with MSP when available. If market price is BELOW MSP, clearly warn 
+   the farmer and suggest: (a) selling through government procurement centres, 
+   (b) storing if they have facilities, (c) checking PMFBY claim eligibility.
+   If NO MSP exists for the crop (onion, potato, tomato), note this and suggest 
+   the farmer compare prices across nearby mandis before selling.
+11. NEVER generate URLs or website links. If the farmer needs online resources, 
+    say "contact your local KVK or agriculture extension office."""
 
 
 def get_vectorstore():
@@ -172,6 +181,15 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
             print(weather_context)
             print()
 
+    # 3. Fetch mandi prices if commodity detected
+    price_context = ""
+    detected_commodity = detect_commodity(query)
+    if detected_commodity:
+        price_state = state_filter or detected_state
+        price_context = get_price_context(detected_commodity, price_state)
+        if price_context:
+            print(f"  Fetching mandi prices for {detected_commodity}...")
+
     # 3. Retrieve from vector store
     vectorstore = get_vectorstore()
     results = retrieve(vectorstore, query, state_filter)
@@ -200,6 +218,9 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
     if weather_context:
         prompt_parts.append(f"REAL-TIME WEATHER DATA:\n{weather_context}\n\n")
 
+    if price_context:
+        prompt_parts.append(f"MARKET PRICE DATA:\n{price_context}\n\n")
+
     prompt_parts.append(f"CONTEXT DOCUMENTS:\n{doc_context}\n")
     prompt_parts.append(f"FARMER'S QUESTION: {query}\n\n")
     prompt_parts.append("Based on the context documents and weather data above, provide a helpful and specific answer:")
@@ -224,7 +245,8 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
             print(f"   - {state} -- {district} district")
     if weather_context:
         print(f"   - Open-Meteo weather API (real-time)")
-
+    if price_context:
+        print(f"   - data.gov.in mandi prices (real-time)")
     return response
 
 

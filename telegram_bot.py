@@ -40,6 +40,7 @@ from telegram.ext import (
 from weather import get_weather_context, detect_district
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+from mandi_prices import get_price_context, detect_commodity
 
 # ── Configuration ──────────────────────────────────────────────────────────
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -49,7 +50,7 @@ EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
 TOP_K = 6
-SCORE_THRESHOLD = 1.0  # Reject chunks with score above this
+SCORE_THRESHOLD = 1.15  # Reject chunks with score above this
 
 # Try loading from .env file if token not in environment
 if not BOT_TOKEN:
@@ -128,6 +129,12 @@ def rag_query(query, state_filter=None, use_weather=True):
         if weather_context:
             weather_summary = f"Weather for {detected_district.title()}, {detected_state}"
 
+    # Fetch mandi prices if commodity detected
+    price_context = ""
+    detected_commodity = detect_commodity(query)
+    if detected_commodity:
+        price_context = get_price_context(detected_commodity, state_filter)
+
     # Retrieve
     search_kwargs = {"k": TOP_K}
     if state_filter:
@@ -169,6 +176,9 @@ def rag_query(query, state_filter=None, use_weather=True):
     prompt_parts.append(f"FARMER'S QUESTION: {query}\n\n")
     prompt_parts.append("Provide a helpful, concise answer:")
     prompt = "".join(prompt_parts)
+
+    if price_context:
+        prompt_parts.append(f"MARKET PRICE DATA:\n{price_context}\n\n")
 
     # Call Ollama (non-streaming for Telegram)
     try:
@@ -344,6 +354,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # If Markdown parsing fails, send without formatting
         await update.message.reply_text(response)
 
+async def cmd_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /price <commodity> [state] command."""
+    if not context.args:
+        await update.message.reply_text(
+            "Usage: /price <commodity> [state]\n"
+            "Examples:\n"
+            "  /price wheat Bihar\n"
+            "  /price onion Maharashtra\n"
+            "  /price rice"
+        )
+        return
+
+    from mandi_prices import get_price_context
+    commodity = context.args[0]
+    state = " ".join(context.args[1:]) if len(context.args) > 1 else None
+
+    await update.message.chat.send_action("typing")
+    ctx = get_price_context(commodity, state)
+    if ctx:
+        await update.message.reply_text(f"```\n{ctx}\n```", parse_mode="Markdown")
+    else:
+        await update.message.reply_text(
+            f"No price data found for {commodity}" +
+            (f" in {state}" if state else "") +
+            ".\nTry: /price wheat Bihar"
+        )
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     """Log errors."""
@@ -365,6 +401,7 @@ def main():
     app.add_handler(CommandHandler("weather", cmd_weather))
     app.add_handler(CommandHandler("state", cmd_state))
     app.add_handler(CommandHandler("reset", cmd_reset))
+    app.add_handler(CommandHandler("price", cmd_price))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 

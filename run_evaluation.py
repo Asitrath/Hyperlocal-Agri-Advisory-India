@@ -111,6 +111,23 @@ TEST_CASES = [
         "must_contain": ["Solapur", "Anantapur"],
         "must_not_contain": [],
     },
+# Mandi Prices
+    {
+        "id": "TC11",
+        "category": "Mandi-Price",
+        "query": "What is the current onion price in Maharashtra and should I sell now?",
+        "expected_goal": "Fetch live mandi prices, note no MSP for onion, and advise based on CRIDA plans.",
+        "must_contain": ["Maharashtra", "onion"],
+        "must_not_contain": [],
+    },
+    {
+        "id": "TC12",
+        "category": "Mandi-Price",
+        "query": "Wheat prices are crashing in Bihar, should I store or sell?",
+        "expected_goal": "Fetch wheat prices, compare with MSP (Rs.2425/qtl), advise on storage or government procurement.",
+        "must_contain": ["wheat"],
+        "must_not_contain": [],
+    },
 ]
 
 

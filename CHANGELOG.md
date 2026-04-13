@@ -77,3 +77,24 @@
 - **Automated Logging:** Results are now exported to timestamped JSON reports in `/evaluation_logs` for auditability.
 - **Performance Monitoring:** Added latency tracking per query to monitor system speed as the database scales.
 
+## [0.6.1] - 2026-04-13
+### Added
+- **v2 Evaluation Suite**: Upgraded `run_evaluations.py` with 10 "Golden" test cases across 5 functional categories.
+- **LLM-as-a-Judge**: Integrated automated self-grading logic using Mistral to provide subjective quality scores (0-5) and diagnostic reasoning.
+- **Markdown Report Generator**: Added automated conversion of JSON evaluation logs into readable Markdown summaries for `docs/EVALUATION.md`.
+
+### Changed
+- **Relevance Threshold Tuning**: Increased `RELEVANCE_THRESHOLD` from **1.0 to 1.15** to improve recall for noisier PDF text and resolve "null response" issues.
+- **Category Filtering**: Updated evaluation script to allow targeted testing via the `--category` flag.
+
+### Fixed
+- **TC02 Regression**: Resolved the silent failure in Solapur district retrieval by adjusting vector distance parameters.
+- **Hallucination Guardrails**: Refined the geographic refusal logic to prevent the model from associating out-of-scope cities with incorrect states.
+
+## [0.7.0] - 2026-04-13
+### Added
+- `mandi_prices.py`: Real-time market data integration using the **Data.gov.in (Agmarknet)** API.
+- **MSP Logic**: Hardcoded 2025-26 Minimum Support Prices for 20+ major crops for profit-margin analysis.
+- **Market Comparison**: Automated calculation of price variance (Above/Below MSP) to assist in procurement decisions.
+- **Commodity Normalization**: Comprehensive alias mapping for regional crop names (e.g., *pyaz, kanda, batata*).
+
