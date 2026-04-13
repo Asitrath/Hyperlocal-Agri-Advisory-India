@@ -117,6 +117,21 @@ For farmer-facing access, a Telegram bot wraps the full RAG pipeline.
 
 Bot commands: `/start`, `/weather Patna`, `/state Bihar`, or just type a question.
 
+## Multilingual Support
+
+The system auto-detects the farmer's language and responds in the same language.
+No setup needed — just type in any supported language.
+
+**Supported:** Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, English
+
+### Hindi — Drought advice for Patna
+![Hindi Demo](screenshots/hindi.PNG)
+
+### Odia — Rice pest management
+![Odia Demo](screenshots/odia.PNG)
+
+### Punjabi — Wheat disease control
+![Punjabi Demo](screenshots/punjabi.PNG)
 
 ## Metadata Enrichment Logic
 
