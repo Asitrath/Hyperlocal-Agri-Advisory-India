@@ -42,6 +42,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from mandi_prices import get_price_context, detect_commodity
 
+from translator import detect_language, translate_query, translate_response, get_language_flag
+
 # ── Configuration ──────────────────────────────────────────────────────────
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 CHROMA_DIR = "./chroma_db"
@@ -81,16 +83,40 @@ answering ONLY from the provided CONTEXT DOCUMENTS (official ICAR-CRIDA
 district contingency plans and government agriculture handbooks).
 
 STRICT RULES:
-1. If the context does NOT explicitly cover the crop, location, or topic asked 
-   about, say: "The ICAR-CRIDA plans in my database do not cover this query."
-2. NEVER use outside knowledge.
-3. Always cite the specific district and state.
-4. Include specific crop varieties, chemical dosages, and timing when available.
-5. Keep language simple — your audience is farmers.
-6. For weather contingencies, structure as: (a) Situation (b) Recommended crops 
-   (c) Agronomic measures (d) Government scheme linkages.
-7. If REAL-TIME WEATHER data is provided, reference it in your answer.
-8. Keep answers concise — under 300 words. Farmers read on small screens."""
+1a. If the context does NOT explicitly cover the crop, location, or topic asked 
+   about, you MUST say: "The official ICAR-CRIDA contingency plans in my 
+   database do not cover this specific query."
+1b. After stating the query is not covered, STOP. Do NOT add "However" or 
+    any general advice. Your response must end after the refusal.
+2. NEVER use outside knowledge. Do NOT mention regions, varieties, chemicals, 
+   or practices not found in the context documents.
+3. Always cite the specific district and state from the context.
+4. Include specific crop varieties, chemical dosages, and timing when available 
+   in the context.
+5. Keep language simple and practical — your audience is farmers and field officers.
+6. For weather contingency questions (drought, flood, delayed monsoon), structure 
+   your answer as:
+   (a) The situation
+   (b) Recommended crops/varieties from the context
+   (c) Agronomic measures mentioned
+   (d) Any government scheme linkages mentioned
+7. If the context partially covers the query, answer what you can and clearly 
+   state what is NOT covered.
+8. If REAL-TIME WEATHER data is provided, use it to make your advice more 
+   specific. For example, if rainfall is in deficit, prioritize drought 
+   contingency advice. If excess rain is reported, focus on waterlogging and 
+   flood measures. Reference the weather data in your answer.
+9. If the user asks about government support, subsidies, or insurance, prioritize 
+   information from the 'Scheme' documents and explain eligibility or application 
+   steps found in the context.
+10. If MARKET PRICE DATA is provided, reference the actual prices in your answer.
+   Compare with MSP when available. If market price is BELOW MSP, clearly warn 
+   the farmer and suggest: (a) selling through government procurement centres, 
+   (b) storing if they have facilities, (c) checking PMFBY claim eligibility.
+   If NO MSP exists for the crop (onion, potato, tomato), note this and suggest 
+   the farmer compare prices across nearby mandis before selling.
+11. NEVER generate URLs or website links. If the farmer needs online resources, 
+    say "contact your local KVK or agriculture extension office."""
 
 
 # ── RAG components (loaded once at startup) ────────────────────────────────
@@ -323,13 +349,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Send "typing" indicator
     await update.message.chat.send_action("typing")
 
-    # Get state filter if set
+    # 1. Detect language and translate if needed
+    user_lang = detect_language(query)
+    print(f"DEBUG: detected language = {user_lang}")
+    english_query = query
+
+    if user_lang != "en":
+        english_query, user_lang = translate_query(query, user_lang)
+        lang_label = get_language_flag(user_lang)
+        logger.info(f"  Translated from {lang_label}: {english_query}")
+
+    # 2. Get state filter if set
     state_filter = context.user_data.get("state_filter")
 
-    # Run RAG pipeline
-    answer, sources, weather_info = rag_query(query, state_filter=state_filter)
+    # 3. Run RAG pipeline with English query
+    answer, sources, weather_info = rag_query(english_query, state_filter=state_filter)
 
-    # Format response
+    # 4. Translate response back if needed
+    if user_lang != "en":
+        answer = translate_response(answer, user_lang)
+
+    # 5. Format response
     response_parts = []
 
     if weather_info:
@@ -344,14 +384,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     response = "\n".join(response_parts)
 
-    # Telegram has a 4096 char limit
     if len(response) > 4000:
         response = response[:3950] + "\n\n... (truncated)"
 
     try:
         await update.message.reply_text(response, parse_mode="Markdown")
     except Exception:
-        # If Markdown parsing fails, send without formatting
         await update.message.reply_text(response)
 
 async def cmd_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -385,6 +423,25 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     """Log errors."""
     logger.error(f"Error: {context.error}", exc_info=context.error)
 
+async def cmd_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /lang command — show supported languages."""
+    await update.message.reply_text(
+        "*Supported Languages*\n\n"
+        "Just type your question in any of these languages:\n\n"
+        "हिंदी (Hindi)\n"
+        "मराठी (Marathi)\n"
+        "বাংলা (Bengali)\n"
+        "తెలుగు (Telugu)\n"
+        "தமிழ் (Tamil)\n"
+        "ગુજરાતી (Gujarati)\n"
+        "ಕನ್ನಡ (Kannada)\n"
+        "മലയാളം (Malayalam)\n"
+        "ਪੰਜਾਬੀ (Punjabi)\n"
+        "ଓଡ଼ିଆ (Odia)\n"
+        "English\n\n"
+        "The bot auto-detects your language — no setup needed!",
+        parse_mode="Markdown"
+    )
 
 # ── Main ───────────────────────────────────────────────────────────────────
 def main():
@@ -402,6 +459,7 @@ def main():
     app.add_handler(CommandHandler("state", cmd_state))
     app.add_handler(CommandHandler("reset", cmd_reset))
     app.add_handler(CommandHandler("price", cmd_price))
+    app.add_handler(CommandHandler("lang", cmd_lang))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 

@@ -29,6 +29,7 @@ from langchain_community.vectorstores import Chroma
 from weather import get_weather_context, detect_district
 # mandi price integration
 from mandi_prices import get_price_context, detect_commodity
+from translator import detect_language, translate_query, translate_response, get_language_flag
 
 # ── Configuration ──────────────────────────────────────────────────────────
 CHROMA_DIR = "./chroma_db"
@@ -167,6 +168,14 @@ def query_ollama(prompt, stream=True):
 def ask(query, state_filter=None, verbose=False, use_weather=True):
     """Full RAG pipeline: detect location -> fetch weather -> retrieve -> generate."""
 
+    # 0. Detect language and translate if needed
+    user_lang = detect_language(query)
+    if user_lang != "en":
+        original_query = query
+        query, user_lang = translate_query(query, user_lang)
+        if not silent:
+            print(f"  [{get_language_flag(user_lang)}] Translated to English: {query}")
+
     # 1. Detect district from query
     detected_district, detected_state = detect_district(query)
     if detected_state and not state_filter:
@@ -247,6 +256,11 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
         print(f"   - Open-Meteo weather API (real-time)")
     if price_context:
         print(f"   - data.gov.in mandi prices (real-time)")
+    # 7. Translate response back if needed
+    if user_lang != "en":
+        if not silent:
+            print(f"\n  Translating response to {get_language_flag(user_lang)}...")
+        response = translate_response(response, user_lang)
     return response
 
 
@@ -318,6 +332,12 @@ def interactive_mode(state_filter=None, use_weather=True):
             if len(parts) == 2:
                 current_filter = parts[0][1:]
                 query = parts[1]
+
+        if query.lower() == "/lang":
+            print("  Supported: Hindi, Bengali, Tamil, Telugu, Marathi,")
+            print("  Gujarati, Kannada, Malayalam, Punjabi, Odia, English")
+            print("  Just type in any language — auto-detected!\n")
+            continue
 
         ask(query, state_filter=current_filter, verbose=True, use_weather=use_weather)
         print()

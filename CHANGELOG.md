@@ -98,3 +98,15 @@
 - **Market Comparison**: Automated calculation of price variance (Above/Below MSP) to assist in procurement decisions.
 - **Commodity Normalization**: Comprehensive alias mapping for regional crop names (e.g., *pyaz, kanda, batata*).
 
+## [0.8.0] - 2026-04-13
+### Added
+- `translator.py`: A new multilingual module supporting 10 Indian languages (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, and Odia).
+- **"Translation Sandwich" Architecture**: Automated detection and two-way translation of queries and responses to allow regional language interaction with English RAG sources.
+- **Agricultural Term Protection**: Implemented a `PRESERVE_TERMS` layer to prevent the mistranslation of variety names (e.g., Prabhat), chemicals, and government schemes.
+- **Regex-based Script Detection**: High-speed language detection using Unicode script ranges for Indian scripts.
+
+### Changed
+- **Bot Response Pipeline**: Integrated `translator.py` into the main execution flow, enabling the Telegram bot to automatically respond in the user's detected script.
+
+### Technical Dependencies
+- Added `deep-translator` as a core dependency for the Google Translate engine integration.
