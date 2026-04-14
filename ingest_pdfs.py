@@ -44,6 +44,9 @@ STATE_ALIASES = {
     "maharashtra": "Maharashtra",
     "odisha": "Odisha",
     "rajasthan": "Rajasthan",
+    "punjab": "Punjab",
+    "karnataka": "Karnataka",
+    "tamil_nadu": "Tamil Nadu",
     "_handbooks": "All India",
     "_schemes": "All India",
 }
@@ -57,6 +60,27 @@ AGRO_ZONES = {
     "Udaipur": "Southern Rajasthan",
     "Nagpur": "Central Plateau and Hills",
     "Cuttack": "East Coast Plains and Hills",
+     # New zones for Punjab
+    "Ludhiana": "Trans-Gangetic Plains",
+    "Amritsar": "Trans-Gangetic Plains",
+    "Patiala": "Trans-Gangetic Plains",
+    "Jalandhar": "Trans-Gangetic Plains",
+    
+    # New zones for Karnataka
+    "Mandya": "Southern Plateau and Hills",
+    "Mysore": "Southern Plateau and Hills",
+    "Belgaum": "Western Ghats",
+    "Dharwad": "Western Plateau and Hills",
+    "Raichur": "Southern Plateau and Hills",
+    
+    # New zones for Tamil Nadu
+    "Cuddalore": "East Coast Plains and Hills",
+    "Tiruchirappalli": "Southern Plateau and Hills",
+    "Coimbatore": "Western Ghats",
+    "Madurai": "Southern Plateau and Hills",
+    "Thanjavur": "East Coast Plains and Hills",
+    "Vellore": "Southern Plateau and Hills",
+
 }
 
 
