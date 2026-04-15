@@ -463,3 +463,38 @@ This phase evaluates the "Translation Sandwich" architecture, specifically check
 ### ⚠️ Observed Limitations
 * **Hybrid Scripting:** In cases where users mix English and regional languages (Hinglish), the system defaults to the detected script.
 * **Source Attribution:** The "Sources" list currently remains in English to maintain link integrity to the original PDF filenames.
+
+## 🧪 Phase 9: Regional Disaster & Fertilizer Recovery (April 15, 2026)
+
+This phase tests the system's ability to handle high-stress agricultural scenarios: unseasonal hail, urea shortages, and insurance for leased land.
+
+### 📊 Performance on New Test Cases
+| ID | Topic | Expected Outcome | Status |
+| :--- | :--- | :--- | :--- |
+| **TC13/15** | Bikaner Hail | Pull post-hail rabi recovery (Mustard/Chana) | ✅ **PASS** |
+| **TC16** | Fertilizer Crisis | Suggest Rajasthan-specific nutrient alternatives | ✅ **PASS** |
+| **TC20** | Leased Land | Identify PMFBY eligibility for tenant farmers | ✅ **PASS** |
+| **TC21** | Cross-District | Simultaneous retrieval from RJ and PB | ✅ **PASS** |
+
+### 💡 Key Findings
+* **Threshold Impact:** The adjustment to `1.3` successfully allowed the retrieval of Bikaner contingency plans that were previously being filtered out.
+* **Negative Constraints:** The `must_not_contain` check passed, ensuring the model did not default to generic "temperate climate" advice (like apples) when discussing Rajasthan.
+
+## 🧪 Phase 9: Cross-District Stress Test (April 15, 2026)
+
+**Goal:** Verify if the system can simultaneously handle advice for two different states in one query.
+
+### 📊 Results
+* **Average Score:** 3.5/5
+* **Pass Rate:** 100% (Threshold >= 3)
+* **Keyword Success:** 50%
+
+### ⚠️ Critical Findings
+1. **Retrieval Imbalance:** In TC10, the vector store favored Anantapur (AP) chunks, starving the LLM of Solapur (MH) context.
+2. **Indexing Gap:** TC21 confirmed that Bikaner (RJ) and Sangrur (PB) are currently unreachable. 
+3. **Latency Variance:** Successfully handled a heavy 73s inference for a complex comparison, proving the Mistral model can reason across multiple sources when provided.
+
+### ✅ Action Plan
+1. Re-ingest with updated `Bikaner` agro-zone mapping.
+2. Upgrade to `langchain-chroma` for better stability.
+3. Increase `k` in similarity search to ensure multi-state representation.

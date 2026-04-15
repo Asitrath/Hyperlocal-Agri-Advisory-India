@@ -81,6 +81,8 @@ AGRO_ZONES = {
     "Thanjavur": "East Coast Plains and Hills",
     "Vellore": "Southern Plateau and Hills",
 
+    "Bikaner": "Western Rajasthan",
+    "Sangrur": "Trans-Gangetic Plains",
 }
 
 

@@ -37,8 +37,8 @@ COLLECTION_NAME = "agri_advisory"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
-TOP_K = 6
-
+TOP_K = 8
+SCORE_THRESHOLD = 1.15  # Reject chunks with score above this
 
 # ── System prompt ──────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """You are a STRICT agricultural advisor for Indian farmers, 
@@ -203,13 +203,15 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
     vectorstore = get_vectorstore()
     results = retrieve(vectorstore, query, state_filter)
 
-    # Filter out low-quality matches
-    results = [(doc, score) for doc, score in results if score < 1.15]
+    # Use looser threshold when state filter is active
+    threshold = 1.3 if state_filter else SCORE_THRESHOLD
+    results = [(doc, score) for doc, score in results if score < threshold]
 
     if not results:
-        print("\nNo relevant documents found for this query.")
-        print("This system covers: Bihar, Odisha, Maharashtra, Rajasthan, and Andhra Pradesh.")
-        return
+        msg = ("No relevant documents found for this query.\n"
+               "This system covers: Bihar, Odisha, Maharashtra, Rajasthan, and Andhra Pradesh.")
+        print(f"\n{msg}")
+        return msg
 
     if verbose:
         print(f"  Retrieved {len(results)} chunks:")

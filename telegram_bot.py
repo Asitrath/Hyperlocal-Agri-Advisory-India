@@ -18,6 +18,9 @@ Commands:
     /weather   - Check weather for a district (e.g. /weather Patna)
     /state     - Set default state filter (e.g. /state Bihar)
     /reset     - Clear state filter
+    /price     - Check mandi prices (e.g. /price onion Maharashtra)
+    /lang      - Show supported languages
+    /stats     - Show feedback statistics
     Any text   - Ask an agriculture question
 """
 
@@ -26,12 +29,14 @@ import sys
 import json
 import logging
 import requests
+import time
 
-from telegram import Update, BotCommand
+from telegram import Update, BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     filters,
     ContextTypes,
 )
@@ -41,8 +46,8 @@ from weather import get_weather_context, detect_district
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from mandi_prices import get_price_context, detect_commodity
-
 from translator import detect_language, translate_query, translate_response, get_language_flag
+from feedback import FeedbackStore
 
 # ── Configuration ──────────────────────────────────────────────────────────
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -51,7 +56,7 @@ COLLECTION_NAME = "agri_advisory"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
-TOP_K = 6
+TOP_K = 8
 SCORE_THRESHOLD = 1.15  # Reject chunks with score above this
 
 # Try loading from .env file if token not in environment
@@ -75,6 +80,12 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
+
+# Bilingual safety disclaimer appended to every response
+DISCLAIMER = (
+    "\n\n⚠️ सत्यापन: रासायनिक खुराक की पुष्टि अपने स्थानीय KVK से करें।"
+    "\n⚠️ Verify dosages with your local KVK before application."
+)
 
 
 # ── System prompt ──────────────────────────────────────────────────────────
@@ -135,12 +146,16 @@ _vectorstore = Chroma(
 )
 print("RAG system ready!")
 
+print("Initializing feedback store...")
+feedback_store = FeedbackStore()
+print("Feedback store ready!")
+
 
 # ── Core RAG function ─────────────────────────────────────────────────────
 def rag_query(query, state_filter=None, use_weather=True):
     """
     Run the full RAG pipeline and return the answer as a string.
-    Returns (answer_text, sources_list, weather_info)
+    Returns (answer_text, sources_list, weather_info, prices_used)
     """
     # Detect district
     detected_district, detected_state = detect_district(query)
@@ -157,9 +172,12 @@ def rag_query(query, state_filter=None, use_weather=True):
 
     # Fetch mandi prices if commodity detected
     price_context = ""
+    prices_used = False
     detected_commodity = detect_commodity(query)
     if detected_commodity:
         price_context = get_price_context(detected_commodity, state_filter)
+        if price_context:
+            prices_used = True
 
     # Retrieve
     search_kwargs = {"k": TOP_K}
@@ -168,7 +186,8 @@ def rag_query(query, state_filter=None, use_weather=True):
     results = _vectorstore.similarity_search_with_score(query, **search_kwargs)
 
     # Filter low-quality matches
-    results = [(doc, score) for doc, score in results if score < SCORE_THRESHOLD]
+    threshold = 1.3 if state_filter else SCORE_THRESHOLD
+    results = [(doc, score) for doc, score in results if score < threshold]
 
     if not results:
         return (
@@ -178,6 +197,7 @@ def rag_query(query, state_filter=None, use_weather=True):
             "and Andhra Pradesh.",
             [],
             weather_summary,
+            prices_used,
         )
 
     # Format context
@@ -198,13 +218,12 @@ def rag_query(query, state_filter=None, use_weather=True):
     prompt_parts = [SYSTEM_PROMPT, "\n"]
     if weather_context:
         prompt_parts.append(f"REAL-TIME WEATHER:\n{weather_context}\n\n")
+    if price_context:
+        prompt_parts.append(f"MARKET PRICE DATA:\n{price_context}\n\n")
     prompt_parts.append(f"CONTEXT DOCUMENTS:\n{doc_context}\n")
     prompt_parts.append(f"FARMER'S QUESTION: {query}\n\n")
     prompt_parts.append("Provide a helpful, concise answer:")
     prompt = "".join(prompt_parts)
-
-    if price_context:
-        prompt_parts.append(f"MARKET PRICE DATA:\n{price_context}\n\n")
 
     # Call Ollama (non-streaming for Telegram)
     try:
@@ -238,7 +257,7 @@ def rag_query(query, state_filter=None, use_weather=True):
             seen.add(key)
             sources.append(f"{state} — {district}")
 
-    return answer, sources, weather_summary
+    return answer, sources, weather_summary, prices_used
 
 
 # ── Telegram handlers ─────────────────────────────────────────────────────
@@ -247,21 +266,25 @@ WELCOME_MSG = """
 District-level agriculture advice powered by ICAR-CRIDA contingency plans.
 
 *How to use:*
-Just type your question! For example:
+Just type your question in any language! For example:
 • "What to grow if monsoon is delayed in Patna?"
+• "पटना में सूखा पड़ रहा है, कौन सी फसल उगाऊं?"
 • "Rice pest control in Sundargarh Odisha"
-• "Drought management for Solapur"
 
 *Commands:*
 /weather Patna — Check live weather for a district
+/price onion Maharashtra — Check mandi prices
 /state Bihar — Set state filter for all queries
 /reset — Clear state filter
+/lang — Show supported languages
 /help — Show this message
 
 *Coverage:* Bihar, Odisha, Maharashtra, Rajasthan, Andhra Pradesh (125 districts)
+*Languages:* Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, English
 
 ⚠️ Always verify chemical dosages with your local agriculture officer.
 """
+
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command."""
@@ -292,7 +315,6 @@ async def cmd_weather(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text(f"Could not fetch weather for {district_name}.")
     else:
-        # Try direct lookup
         weather = get_weather_context(district_name)
         if weather:
             await update.message.reply_text(f"```\n{weather}\n```", parse_mode="Markdown")
@@ -337,61 +359,6 @@ async def cmd_reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("State filter cleared. Searching all states now.")
 
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle any text message as an agriculture query."""
-    query = update.message.text.strip()
-    if not query:
-        return
-
-    user = update.effective_user
-    logger.info(f"Query from {user.first_name} ({user.id}): {query}")
-
-    # Send "typing" indicator
-    await update.message.chat.send_action("typing")
-
-    # 1. Detect language and translate if needed
-    user_lang = detect_language(query)
-    print(f"DEBUG: detected language = {user_lang}")
-    english_query = query
-
-    if user_lang != "en":
-        english_query, user_lang = translate_query(query, user_lang)
-        lang_label = get_language_flag(user_lang)
-        logger.info(f"  Translated from {lang_label}: {english_query}")
-
-    # 2. Get state filter if set
-    state_filter = context.user_data.get("state_filter")
-
-    # 3. Run RAG pipeline with English query
-    answer, sources, weather_info = rag_query(english_query, state_filter=state_filter)
-
-    # 4. Translate response back if needed
-    if user_lang != "en":
-        answer = translate_response(answer, user_lang)
-
-    # 5. Format response
-    response_parts = []
-
-    if weather_info:
-        response_parts.append(f"🌤️ {weather_info}\n")
-
-    response_parts.append(answer)
-
-    if sources:
-        response_parts.append("\n\n📍 *Sources:*")
-        for src in sources[:5]:
-            response_parts.append(f"  • {src}")
-
-    response = "\n".join(response_parts)
-
-    if len(response) > 4000:
-        response = response[:3950] + "\n\n... (truncated)"
-
-    try:
-        await update.message.reply_text(response, parse_mode="Markdown")
-    except Exception:
-        await update.message.reply_text(response)
-
 async def cmd_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /price <commodity> [state] command."""
     if not context.args:
@@ -404,7 +371,6 @@ async def cmd_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    from mandi_prices import get_price_context
     commodity = context.args[0]
     state = " ".join(context.args[1:]) if len(context.args) > 1 else None
 
@@ -419,9 +385,6 @@ async def cmd_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ".\nTry: /price wheat Bihar"
         )
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    """Log errors."""
-    logger.error(f"Error: {context.error}", exc_info=context.error)
 
 async def cmd_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /lang command — show supported languages."""
@@ -443,6 +406,143 @@ async def cmd_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
+
+async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show feedback statistics."""
+    stats = feedback_store.get_stats()
+
+    lang_lines = ""
+    for lang, count in stats["languages"].items():
+        lang_lines += f"    {lang}: {count}\n"
+
+    msg = (
+        f"📊 *Bot Statistics*\n\n"
+        f"Total queries: {stats['total_queries']}\n"
+        f"Unique users: {stats['unique_users']}\n"
+        f"👍 Positive: {stats['positive']}\n"
+        f"👎 Negative: {stats['negative']}\n"
+        f"No feedback: {stats['no_feedback']}\n"
+        f"Satisfaction: {stats['satisfaction_rate']}\n"
+        f"Avg latency: {stats['avg_latency_sec']}s\n"
+    )
+    if lang_lines:
+        msg += f"\nLanguages:\n{lang_lines}"
+
+    try:
+        await update.message.reply_text(msg, parse_mode="Markdown")
+    except Exception:
+        await update.message.reply_text(msg)
+
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle any text message as an agriculture query."""
+    query = update.message.text.strip()
+    if not query:
+        return
+
+    user = update.effective_user
+    logger.info(f"Query from {user.first_name} ({user.id}): {query}")
+
+    # Send "typing" indicator
+    await update.message.chat.send_action("typing")
+
+    # 1. Detect language and translate if needed
+    user_lang = detect_language(query)
+    english_query = query
+
+    if user_lang != "en":
+        english_query, user_lang = translate_query(query, user_lang)
+        lang_label = get_language_flag(user_lang)
+        logger.info(f"  Translated from {lang_label}: {english_query}")
+
+    # 2. Get state filter if set
+    state_filter = context.user_data.get("state_filter")
+
+    # 3. Run RAG pipeline with English query
+    start_time = time.time()
+    answer, sources, weather_info, prices_used = rag_query(
+        english_query, state_filter=state_filter
+    )
+    latency = round(time.time() - start_time, 2)
+
+    # 4. Translate response back if needed
+    if user_lang != "en":
+        answer = translate_response(answer, user_lang)
+
+    # 5. Format response with disclaimer
+    response_parts = []
+
+    if weather_info:
+        response_parts.append(f"🌤️ {weather_info}\n")
+
+    response_parts.append(answer)
+
+    if sources:
+        response_parts.append("\n\n📍 Sources:")
+        for src in sources[:5]:
+            response_parts.append(f"  • {src}")
+
+    response_parts.append(DISCLAIMER)
+
+    response = "\n".join(response_parts)
+
+    if len(response) > 4000:
+        response = response[:3900] + "\n\n..." + DISCLAIMER
+
+    # 6. Log to feedback database
+    query_id = feedback_store.log_query(
+        user_id=user.id,
+        username=user.first_name,
+        query=query,
+        translated_query=english_query,
+        language=user_lang,
+        response=answer,
+        sources=sources,
+        weather_used=bool(weather_info),
+        prices_used=prices_used,
+        latency=latency,
+    )
+
+    # 7. Create feedback buttons
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("👍 Helpful", callback_data=f"fb_pos_{query_id}"),
+            InlineKeyboardButton("👎 Not helpful", callback_data=f"fb_neg_{query_id}"),
+        ]
+    ])
+
+    # 8. Send with feedback buttons
+    try:
+        await update.message.reply_text(response, reply_markup=keyboard, parse_mode="Markdown")
+    except Exception:
+        await update.message.reply_text(response, reply_markup=keyboard)
+
+
+async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle thumbs up/down button presses."""
+    callback = update.callback_query
+    await callback.answer()
+
+    data = callback.data
+    if data.startswith("fb_pos_"):
+        query_id = int(data.replace("fb_pos_", ""))
+        feedback_store.record_feedback(query_id, "positive")
+        await callback.edit_message_reply_markup(reply_markup=None)
+        await callback.message.reply_text("🙏 Thank you for your feedback!")
+    elif data.startswith("fb_neg_"):
+        query_id = int(data.replace("fb_neg_", ""))
+        feedback_store.record_feedback(query_id, "negative")
+        await callback.edit_message_reply_markup(reply_markup=None)
+        await callback.message.reply_text(
+            "🙏 Thank you. We'll use this to improve our advice."
+        )
+
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    """Log errors."""
+    logger.error(f"Error: {context.error}", exc_info=context.error)
+
+
 # ── Main ───────────────────────────────────────────────────────────────────
 def main():
     print(f"Starting Krishi Advisory Bot...")
@@ -460,6 +560,8 @@ def main():
     app.add_handler(CommandHandler("reset", cmd_reset))
     app.add_handler(CommandHandler("price", cmd_price))
     app.add_handler(CommandHandler("lang", cmd_lang))
+    app.add_handler(CommandHandler("stats", cmd_stats))
+    app.add_handler(CallbackQueryHandler(handle_feedback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_error_handler(error_handler)
 

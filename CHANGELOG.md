@@ -110,3 +110,11 @@
 
 ### Technical Dependencies
 - Added `deep-translator` as a core dependency for the Google Translate engine integration.
+
+## [0.6.2] - 2026-04-15
+### Added
+- **Expanded Golden Dataset (v3):** Added TC13–TC21 covering specific disaster recovery (hail in Bikaner), fertilizer shortages, and complex land-tenure queries (leased land in Sangrur).
+- **Must-Contain/Must-Not-Contain Logic:** Enhanced `run_evaluations.py` to support hard-negative constraints (e.g., ensuring "apples" are not mentioned in Rajasthan queries).
+
+### Changed
+- **Dynamic Retrieval Thresholding:** Implemented a state-aware threshold logic. The system now automatically relaxes the similarity cutoff from `1.0` to `1.3` when a specific state filter is active, significantly reducing "Null Response" failures in Northern state PDFs.

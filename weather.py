@@ -142,6 +142,13 @@ DISTRICT_COORDS = {
     "pratapgarh": (24.03, 74.78),
     "sawai madhopur": (26.02, 76.35),
     "sriganganagar": (29.91, 73.88),
+    "bikaner": (28.02, 73.31),
+    "barmer": (25.75, 71.39),
+    "jodhpur": (26.24, 73.02),
+    "jaipur": (26.92, 75.79),
+    "ajmer": (26.45, 74.64),
+    "alwar": (27.56, 76.63),
+    "churu": (28.30, 74.97),
 
     # Andhra Pradesh
     "anantapur": (14.68, 77.60),
@@ -156,6 +163,18 @@ DISTRICT_COORDS = {
     "srikakulam": (18.30, 83.90),
     "visakhapatnam": (17.69, 83.22),
     "west godavari": (16.92, 81.34),
+
+    # Punjab
+    "sangrur": (30.25, 75.84),
+    "ludhiana": (30.90, 75.86),
+    "amritsar": (31.63, 74.87),
+    "patiala": (30.34, 76.39),
+    "bathinda": (30.21, 74.95),
+    "jalandhar": (31.33, 75.58),
+    "faridkot": (30.68, 74.76),
+    "moga": (30.82, 75.17),
+    "barnala": (30.38, 75.55),
+    "ferozpur": (30.93, 74.61),
 }
 
 # Normal monsoon rainfall (mm) for key districts - used to assess deficit/surplus
@@ -385,12 +404,19 @@ def detect_district(query):
               "buldhana", "washim", "yavatmal", "wardha", "chandrapur", "gadchiroli",
               "gondia", "bhandara", "thane", "ratnagiri", "sindhudurg"]:
         state_map[d] = "Maharashtra"
-    for d in ["udaipur", "kota", "tonk", "sikar", "nagaur", "pali", "sirohi",
-              "rajsamand", "pratapgarh", "sawai madhopur", "sriganganagar"]:
-        state_map[d] = "Rajasthan"
     for d in ["anantapur", "chittoor", "east godavari", "guntur", "kadapa", "krishna",
               "kurnool", "nellore", "prakasam", "srikakulam", "visakhapatnam", "west godavari"]:
         state_map[d] = "Andhra Pradesh"
+    for d in ["bikaner", "barmer", "jodhpur", "jaipur", "ajmer", "alwar", "churu",
+              "udaipur", "kota", "tonk", "sikar", "nagaur", "pali", "sirohi",
+              "rajsamand", "pratapgarh", "sawai madhopur", "sriganganagar", "udaipur",
+              "kota", "tonk", "sikar", "nagaur", "pali", "sirohi", "rajsamand",
+              "pratapgarh", "sawai madhopur", "sriganganagar"]:
+        state_map[d] = "Rajasthan"
+
+    for d in ["sangrur", "ludhiana", "amritsar", "patiala", "bathinda",
+              "jalandhar", "faridkot", "moga", "barnala", "ferozpur"]:
+        state_map[d] = "Punjab"
 
     state = state_map.get(best_match, None)
     return best_match, state
