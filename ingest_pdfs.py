@@ -178,7 +178,8 @@ def load_and_chunk_pdf(filepath, splitter):
     for chunk in chunks:
         state = chunk.metadata.get("state", "India")
         dist = chunk.metadata.get("district", "")
-        prefix = f"[State: {state} | District: {dist}] "
+        doc_type = chunk.metadata.get("doc_type", "contingency_plan")
+        prefix = f"[State: {state} | District: {dist} | Type: {doc_type}] "
         chunk.page_content = prefix + chunk.page_content
 
     return chunks
@@ -199,9 +200,16 @@ def ingest(pdf_dir, chroma_dir):
 
     # 2. Initialize text splitter
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-        separators=["\n\n", "\n", ". ", " ", ""],
+        chunk_size=1000,  # Smaller chunks = more precise retrieval
+        chunk_overlap=200,
+        separators=[
+            "\n\n\n",  # Page breaks
+            "\n\n",  # Paragraph breaks
+            "\n",  # Line breaks (table rows)
+            ". ",  # Sentences
+            " ",
+            "",
+        ],
         length_function=len,
     )
 

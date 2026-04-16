@@ -118,3 +118,39 @@
 
 ### Changed
 - **Dynamic Retrieval Thresholding:** Implemented a state-aware threshold logic. The system now automatically relaxes the similarity cutoff from `1.0` to `1.3` when a specific state filter is active, significantly reducing "Null Response" failures in Northern state PDFs.
+
+## [0.9.0] - 2026-04-15
+### Added
+- `feedback.py`: Implemented a local SQLite database (`feedback.db`) to log every user interaction, including latency and sources.
+- **Sentiment Tracking**: Added a `record_feedback` system to capture thumbs-up/down responses from the Telegram bot.
+- **CLI Dashboard**: Created a command-line interface to view satisfaction rates, unique user counts, and language distribution.
+- **Negative Feedback Review**: Added a specialized query to retrieve recent failures for prompt tuning and error analysis.
+
+## [0.8.0] - 2026-04-13
+### Added
+- `translator.py`: Implemented the "Translation Sandwich" architecture supporting 10 Indian languages.
+- **Technical Term Preservation**: Developed a placeholder system (`XAGRI0X`) to prevent the mistranslation of chemicals and ICAR seed varieties.
+- **Regex Heuristics**: Added script-based language detection for rapid identification of Devanagari, Gurmukhi, Tamil, and other Indian scripts.
+
+## [0.9.0] - 2026-04-15
+### Added
+- **Telegram Feedback Integration**: Linked `telegram_bot.py` to `feedback.py` using Inline Keyboard buttons.
+- **Automated Interaction Logging**: The bot now logs query text, English translations, response latency, and document sources for every user interaction.
+- **User Sentiment Analysis**: Enabled real-time "Helpful/Not Helpful" tracking to calculate live satisfaction rates via the `/stats` command.
+
+## [0.9.5] - 2026-04-15
+### Changed
+- **Optimized Ingestion Pipeline**: Migrated to `RecursiveCharacterTextSplitter` with `chunk_size=1000` to improve semantic density and retrieval precision.
+- **Enhanced Context Grounding**: Implemented a "Metadata Prefix" injection during ingestion, ensuring every text chunk explicitly states its State, District, and Document Type.
+- **Advanced Retrieval**: Replaced standard similarity search with `multi_retrieve` logic, which generates keyword-focused and simplified query variations to maximize recall.
+- **Results Deduplication**: Implemented a content-hash-based deduplication system to prevent redundant information from cluttering the LLM context window.
+
+### Fixed
+- **TC21 Regression**: Resolved "Empty Response" failures for complex cross-district queries by utilizing multi-formulation search.
+
+## [0.9.1] - 2026-04-16
+### Added
+- `analyze_feedback.py`: A comprehensive diagnostic tool for the `feedback.db` SQLite store.
+- **Failure Pattern Recognition**: Automated detection of "Not Covered" refusals and slow-performing queries (>30s).
+- **Keyword Extraction**: Implemented a keyword frequency analysis to identify trending farmer concerns (e.g., pests, specific crops).
+- **Automated Reporting**: Added `--export` functionality to generate Markdown-based performance audits (`feedback_analysis.md`).

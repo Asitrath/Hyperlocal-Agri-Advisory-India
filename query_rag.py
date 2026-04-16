@@ -201,7 +201,7 @@ def ask(query, state_filter=None, verbose=False, use_weather=True):
 
     # 3. Retrieve from vector store
     vectorstore = get_vectorstore()
-    results = retrieve(vectorstore, query, state_filter)
+    results = multi_retrieve(vectorstore, query, state_filter)
 
     # Use looser threshold when state filter is active
     threshold = 1.3 if state_filter else SCORE_THRESHOLD
@@ -344,6 +344,42 @@ def interactive_mode(state_filter=None, use_weather=True):
         ask(query, state_filter=current_filter, verbose=True, use_weather=use_weather)
         print()
 
+
+def multi_retrieve(vectorstore, query, state_filter=None, k=TOP_K):
+    """Retrieve with multiple query formulations for better recall."""
+    search_kwargs = {"k": k}
+    if state_filter:
+        search_kwargs["filter"] = {"state": state_filter}
+
+    # Generate query variations
+    queries = [query]
+
+    # Add a keyword-focused version
+    import re
+    keywords = [w for w in query.split() if len(w) > 3 and w[0].isupper()]
+    if keywords:
+        queries.append(" ".join(keywords))
+
+    # Add a simpler version without filler words
+    simple = re.sub(r'\b(what|how|should|can|do|the|in|my|is|are|for|to|of|and|or|a|an)\b',
+                    '', query, flags=re.IGNORECASE).strip()
+    simple = re.sub(r'\s+', ' ', simple)
+    if simple and simple != query:
+        queries.append(simple)
+
+    # Collect results from all queries, deduplicate
+    all_results = {}
+    for q in queries:
+        results = vectorstore.similarity_search_with_score(q, **search_kwargs)
+        for doc, score in results:
+            # Use page content hash as dedup key
+            key = hash(doc.page_content[:200])
+            if key not in all_results or score < all_results[key][1]:
+                all_results[key] = (doc, score)
+
+    # Sort by score and return top k
+    sorted_results = sorted(all_results.values(), key=lambda x: x[1])
+    return sorted_results[:k]
 
 def main():
     global OLLAMA_MODEL

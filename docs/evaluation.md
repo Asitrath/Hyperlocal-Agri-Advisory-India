@@ -498,3 +498,11 @@ This phase tests the system's ability to handle high-stress agricultural scenari
 1. Re-ingest with updated `Bikaner` agro-zone mapping.
 2. Upgrade to `langchain-chroma` for better stability.
 3. Increase `k` in similarity search to ensure multi-state representation.
+
+## 🧪 Phase 10: Developer Acceptance Testing (DAT)
+
+**Note:** Feedback data currently represents internal developer testing (synthetic users).
+
+### 📊 Performance Baselines
+* **Model Responsiveness:** Average 29.9s. Recommendation: Investigate "Streaming" for Telegram or quantizing the Mistral model to 4-bit to reduce wait times.
+* **Retrieval Consistency:** High success for single-entity pest queries; confirmed need for Sub-Query Decomposition for complex comparisons.

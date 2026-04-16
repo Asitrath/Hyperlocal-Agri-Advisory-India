@@ -503,13 +503,48 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         latency=latency,
     )
 
-    # 7. Create feedback buttons
-    keyboard = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("👍 Helpful", callback_data=f"fb_pos_{query_id}"),
-            InlineKeyboardButton("👎 Not helpful", callback_data=f"fb_neg_{query_id}"),
-        ]
+    # 7. Create action + feedback buttons
+    keyboard_rows = []
+
+    # Quick-action buttons based on what was in the response
+    quick_actions = []
+    if "PMFBY" in answer or "insurance" in answer.lower() or "bima" in answer.lower():
+        quick_actions.append(
+            InlineKeyboardButton("📋 PMFBY Claim Steps", callback_data="qa_pmfby")
+        )
+    if "PM-KISAN" in answer or "pm-kisan" in english_query.lower():
+        quick_actions.append(
+            InlineKeyboardButton("💰 PM-KISAN Info", callback_data="qa_pmkisan")
+        )
+    if prices_used or "price" in english_query.lower() or "mandi" in english_query.lower():
+        quick_actions.append(
+            InlineKeyboardButton("📊 Latest Prices", callback_data="qa_prices")
+        )
+    if "urea" in answer.lower() or "fertili" in answer.lower():
+        quick_actions.append(
+            InlineKeyboardButton("🌱 Fertilizer Alts", callback_data="qa_fertilizer")
+        )
+    if weather_info:
+        quick_actions.append(
+            InlineKeyboardButton("🌤️ 7-day Forecast", callback_data="qa_weather")
+        )
+
+    # Always include a "tell me more" option
+    quick_actions.append(
+        InlineKeyboardButton("❓ More Details", callback_data=f"qa_more_{query_id}")
+    )
+
+    # Arrange in rows of 2
+    for i in range(0, len(quick_actions), 2):
+        keyboard_rows.append(quick_actions[i:i + 2])
+
+    # Feedback row at the bottom
+    keyboard_rows.append([
+        InlineKeyboardButton("👍 Helpful", callback_data=f"fb_pos_{query_id}"),
+        InlineKeyboardButton("👎 Not helpful", callback_data=f"fb_neg_{query_id}"),
     ])
+
+    keyboard = InlineKeyboardMarkup(keyboard_rows)
 
     # 8. Send with feedback buttons
     try:
@@ -519,23 +554,120 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle thumbs up/down button presses."""
+    """Handle all inline button presses (feedback + quick actions)."""
     callback = update.callback_query
     await callback.answer()
-
     data = callback.data
+
+    # Feedback buttons
     if data.startswith("fb_pos_"):
         query_id = int(data.replace("fb_pos_", ""))
         feedback_store.record_feedback(query_id, "positive")
         await callback.edit_message_reply_markup(reply_markup=None)
         await callback.message.reply_text("🙏 Thank you for your feedback!")
-    elif data.startswith("fb_neg_"):
+        return
+
+    if data.startswith("fb_neg_"):
         query_id = int(data.replace("fb_neg_", ""))
         feedback_store.record_feedback(query_id, "negative")
         await callback.edit_message_reply_markup(reply_markup=None)
         await callback.message.reply_text(
             "🙏 Thank you. We'll use this to improve our advice."
         )
+        return
+
+    # Quick-action buttons — re-query the RAG with expanded prompts
+    quick_queries = {
+        "qa_pmfby": "How do I file a PMFBY claim? Step by step process",
+        "qa_pmkisan": "PM-KISAN eligibility and application process",
+        "qa_prices": "Latest mandi prices for major crops in my region",
+        "qa_fertilizer": "What are alternatives to urea if there is a shortage?",
+        "qa_weather": "What is the 7-day weather forecast and what should I do?",
+    }
+
+    if data in quick_queries:
+        await callback.message.chat.send_action("typing")
+        query = quick_queries[data]
+        state_filter = context.user_data.get("state_filter")
+
+        answer, sources, weather_info, _ = rag_query(query, state_filter=state_filter)
+
+        response_parts = [answer]
+        if sources:
+            response_parts.append("\n\n📍 Sources:")
+            for src in sources[:5]:
+                response_parts.append(f"  • {src}")
+        response_parts.append(DISCLAIMER)
+
+        response = "\n".join(response_parts)
+        if len(response) > 4000:
+            response = response[:3900] + "\n\n..." + DISCLAIMER
+
+        try:
+            await callback.message.reply_text(response, parse_mode="Markdown")
+        except Exception:
+            await callback.message.reply_text(response)
+        return
+
+
+    # "More details" button — re-query with expansion prompt
+    if data.startswith("qa_more_"):
+        original_id = int(data.replace("qa_more_", ""))
+        conn = feedback_store.conn
+        row = conn.execute(
+            "SELECT english_query, language FROM queries WHERE id = ?", (original_id,)
+        ).fetchone()
+        if row:
+            original, lang = row
+            expanded = f"Give more specific details and exact varieties/dosages for: {original}"
+            await callback.message.chat.send_action("typing")
+            state_filter = context.user_data.get("state_filter")
+
+            start_time = time.time()
+            answer, sources, weather_info, prices_used = rag_query(
+                expanded, state_filter=state_filter
+            )
+            latency = round(time.time() - start_time, 2)
+
+            # Translate back if needed
+            if lang and lang != "en":
+                answer = translate_response(answer, lang)
+
+            response_parts = [answer]
+            if sources:
+                response_parts.append("\n\n📍 Sources:")
+                for src in sources[:5]:
+                    response_parts.append(f"  • {src}")
+            response_parts.append(DISCLAIMER)
+            response = "\n".join(response_parts)
+            if len(response) > 4000:
+                response = response[:3900] + "..." + DISCLAIMER
+
+            # Log the expanded query too
+            new_id = feedback_store.log_query(
+                user_id=callback.from_user.id,
+                username=callback.from_user.first_name,
+                query=expanded,
+                translated_query=expanded,
+                language=lang or "en",
+                response=answer,
+                sources=sources,
+                weather_used=bool(weather_info),
+                prices_used=prices_used,
+                latency=latency,
+            )
+
+            # Add feedback buttons
+            keyboard = InlineKeyboardMarkup([[
+                InlineKeyboardButton("👍 Helpful", callback_data=f"fb_pos_{new_id}"),
+                InlineKeyboardButton("👎 Not helpful", callback_data=f"fb_neg_{new_id}"),
+            ]])
+
+            try:
+                await callback.message.reply_text(response, reply_markup=keyboard, parse_mode="Markdown")
+            except Exception:
+                await callback.message.reply_text(response, reply_markup=keyboard)
+        return
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
